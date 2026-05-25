@@ -4,13 +4,15 @@ import { formatDateShort } from "../../../utils/time-formate";
 import LoadingAnimation from "../../loading/loading.component";
 import SSProfile from "../../ui-component/ss-profile/ss-profile";
 import { useNavigate } from "react-router-dom";
-import BookmarkButton from "../../BookmarkButton"; // Import the core bookmark module
+import BookmarkButton from "../../BookmarkButton";
 
+// Updated imports
 import {
-  FaTwitter,
   FaLinkedin,
   FaEnvelope,
 } from "react-icons/fa";
+
+import { FaXTwitter } from "react-icons/fa6";
 
 const FeatureComponent = () => {
   const { data, isLoading } = useGetFeaturedListsQuery(undefined);
@@ -69,7 +71,7 @@ const FeatureComponent = () => {
                               {formatDateShort(post.createdAt)}
                             </p>
                             <span className="text-gray-600 text-xs">•</span>
-                            {/* ⏱️ Dynamic Reading Time Badging */}
+
                             <p className="text-xs text-purple-400 font-medium">
                               ⏱️ {calculateReadingTime(post.content)} min read
                             </p>
@@ -77,8 +79,10 @@ const FeatureComponent = () => {
                         </div>
                       </div>
 
-                      {/* 🔖 Bookmark flag widget with redirection shield */}
-                      <div onClick={(e) => e.stopPropagation()} className="relative z-10">
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="relative z-10"
+                      >
                         <BookmarkButton
                           storyId={post._id}
                           bookmarks={post.bookmarks}
@@ -102,6 +106,7 @@ const FeatureComponent = () => {
                         <i className="far fa-heart mr-1"></i>
                         {post.likesCount ?? 0}
                       </span>
+
                       <span className="flex items-center">
                         <i className="far fa-comment mr-1"></i>
                         {post.commentsCount ?? 0}
@@ -109,19 +114,24 @@ const FeatureComponent = () => {
                     </div>
 
                     <div className="flex items-center gap-4 text-gray-400">
+                      {/* Updated X/Twitter Icon */}
                       <a
-                        href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(postUrl)}&text=${encodeURIComponent(post.title || "")}`}
+                        href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(
+                          postUrl
+                        )}&text=${encodeURIComponent(post.title || "")}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        title="Share on Twitter"
+                        title="Share on X"
                         className="motion-icon hover:text-sky-400 hover:-translate-y-0.5"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <FaTwitter size={16} />
+                        <FaXTwitter size={16} />
                       </a>
 
                       <a
-                        href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(postUrl)}`}
+                        href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
+                          postUrl
+                        )}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         title="Share on LinkedIn"
@@ -132,7 +142,14 @@ const FeatureComponent = () => {
                       </a>
 
                       <a
-                        href={`mailto:?subject=${encodeURIComponent(post.title || "")}&body=${encodeURIComponent(`${(post.content || "").slice(0, 120)}...\n\nRead more: ${postUrl}`)}`}
+                        href={`mailto:?subject=${encodeURIComponent(
+                          post.title || ""
+                        )}&body=${encodeURIComponent(
+                          `${(post.content || "").slice(
+                            0,
+                            120
+                          )}...\n\nRead more: ${postUrl}`
+                        )}`}
                         title="Share via Email"
                         className="motion-icon hover:text-red-400 hover:-translate-y-0.5"
                         onClick={(e) => e.stopPropagation()}

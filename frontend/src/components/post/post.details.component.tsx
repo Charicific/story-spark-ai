@@ -19,14 +19,26 @@ import {
   useGetFollowStatusQuery,
 } from "../../redux/apis/user.api";
 
+// Added X/Twitter icon
+import { FaXTwitter } from "react-icons/fa6";
+
 const PostDetailsComponent = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+
   const { data: post, isLoading } = useGetPostByIdQuery(id || "");
+
   const tag = post?.tag;
-    const { data: relatedPost } = useGetPostByTagQuery({ tag: tag || "", excludeId: post?._id || "" });
+
+  const { data: relatedPost } = useGetPostByTagQuery({
+    tag: tag || "",
+    excludeId: post?._id || "",
+  });
+
   const [toggleReaction] = useToggleReactionMutation();
+
   const currentUser = getUserInfo();
+
   const authorId = post?.author?._id;
 
   const { data: followData } = useGetFollowStatusQuery(authorId || "", {
@@ -42,7 +54,9 @@ const PostDetailsComponent = () => {
       toast.error("You need to login to follow this author");
       return;
     }
+
     if (!authorId) return;
+
     try {
       await toggleFollow(authorId).unwrap();
     } catch {
@@ -52,6 +66,7 @@ const PostDetailsComponent = () => {
 
   const handleLike = async () => {
     if (!id) return;
+
     try {
       await toggleReaction({ postId: id }).unwrap();
     } catch (error) {
@@ -62,30 +77,46 @@ const PostDetailsComponent = () => {
 
   const hasUserReacted = post?.reactions?.some((r) => {
     const userId = r.userId;
+
     const email =
-      typeof userId === "object" && userId !== null && "email" in userId
+      typeof userId === "object" &&
+      userId !== null &&
+      "email" in userId
         ? userId.email
         : undefined;
+
     return email === currentUser?.email;
   });
 
   const shareUrl = window.location.href;
+
   const shareTitle = post?.title || "Check out this story!";
 
   const handleTwitterShare = () => {
-    const url = `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareTitle)}`;
+    const url = `https://twitter.com/intent/tweet?url=${encodeURIComponent(
+      shareUrl
+    )}&text=${encodeURIComponent(shareTitle)}`;
+
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
   const handleLinkedInShare = () => {
-    const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
+    const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
+      shareUrl
+    )}`;
+
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
   const handleEmailShare = () => {
     const subject = `Story Spark AI - ${shareTitle}`;
+
     const body = `Check out this interesting story on Story Spark AI: "${shareTitle}"\n\nRead it here: ${shareUrl}`;
-    const url = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+    const url = `mailto:?subject=${encodeURIComponent(
+      subject
+    )}&body=${encodeURIComponent(body)}`;
+
     window.location.href = url;
   };
 
@@ -103,8 +134,10 @@ const PostDetailsComponent = () => {
           >
             <i className="fa-solid fa-left-long"></i> BACK
           </div>
-          <div className=""></div>
+
+          <div></div>
         </div>
+
         <div className="rounded-lg shadow-sm bg-blue-500/10 mb-10">
           <div className="p-8">
             <div className="flex justify-between">
@@ -113,16 +146,21 @@ const PostDetailsComponent = () => {
                   name={post?.author?.name || "Unknown User"}
                   size="h-12 w-12"
                 />
+
                 <div>
                   <h3 className="font-medium text-gray-400">
                     {post?.author?.name || "Unknown User"}
                   </h3>
+
                   <div className="flex items-center text-sm text-gray-500">
-                    <span>{formatDateShort(post ? post?.createdAt : "")}</span>
+                    <span>
+                      {formatDateShort(post ? post?.createdAt : "")}
+                    </span>
                   </div>
                 </div>
               </div>
-              <div className="">
+
+              <div>
                 {currentUser && authorId !== currentUser?.userId && (
                   <button
                     onClick={handleFollow}
@@ -169,8 +207,10 @@ const PostDetailsComponent = () => {
                       hasUserReacted ? "fas" : "far"
                     } fa-heart`}
                   ></i>
+
                   <span>{post?.likesCount}</span>
                 </button>
+
                 {post && (
                   <BookmarkButton
                     storyId={post._id}
@@ -179,16 +219,24 @@ const PostDetailsComponent = () => {
                   />
                 )}
               </div>
+
+              {/* Updated Share Section */}
               <div className="flex items-center space-x-3 bg-slate-800/40 backdrop-blur-md px-4 py-2 rounded-full border border-slate-700/50 shadow-sm">
-                <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 mr-1 select-none">Share:</span>
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 mr-1 select-none">
+                  Share:
+                </span>
+
+                {/* X Share */}
                 <button
                   id="share-twitter-btn"
                   onClick={handleTwitterShare}
                   className="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 hover:border-blue-400 hover:bg-blue-500/10 text-slate-400 hover:text-blue-400 flex items-center justify-center transition-all duration-300 transform hover:scale-110 active:scale-95 cursor-pointer"
-                  aria-label="Share on Twitter"
+                  aria-label="Share on X"
                 >
-                  <i className="fab fa-twitter text-sm"></i>
+                  <FaXTwitter className="text-sm" />
                 </button>
+
+                {/* LinkedIn */}
                 <button
                   id="share-linkedin-btn"
                   onClick={handleLinkedInShare}
@@ -197,6 +245,8 @@ const PostDetailsComponent = () => {
                 >
                   <i className="fab fa-linkedin text-sm"></i>
                 </button>
+
+                {/* Email */}
                 <button
                   id="share-email-btn"
                   onClick={handleEmailShare}
@@ -218,11 +268,16 @@ const PostDetailsComponent = () => {
               <h3 className="text-xl font-semibold mb-4 text-gray-300">
                 Related Stories
               </h3>
-              <RelatedStoriesComponent posts={relatedPost || []} currentPostId={post?._id || ""} />
+
+              <RelatedStoriesComponent
+                posts={relatedPost || []}
+                currentPostId={post?._id || ""}
+              />
             </div>
           </div>
         </div>
       </div>
+
       <div className="absolute top-[-200px] left-[250px] w-[800px] h-[350px] bg-blue-500/20 rounded-full blur-3xl -z-10"></div>
     </div>
   );
