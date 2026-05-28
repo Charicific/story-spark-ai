@@ -89,7 +89,12 @@ const VerifyEmail = async (payload: IEmailBody) => {
       </html>
       `,
     };
-    await transporter.sendMail(mailOptions);
+    
+    if (!config.verify_email || !config.verify_password) {
+      console.log(`\n=========================================\n[DEV MODE] OTP for ${email} is: ${otp}\n=========================================\n`);
+    } else {
+      await transporter.sendMail(mailOptions);
+    }
 
     return {
       expiresAt,
