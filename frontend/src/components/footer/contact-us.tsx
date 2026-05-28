@@ -1,9 +1,9 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Mail, Github, MessageSquare } from "lucide-react";
+import { ArrowRight, Mail, GitBranch, MessageSquare } from "lucide-react";
 
 const CONTACT_ITEMS = [
   { icon: Mail,          text: "ronichandrasarkar@gmail.com"              },
-  { icon: Github,        text: "github.com/ronisarkarexe/story-spark-ai"  },
+  { icon: GitBranch,     text: "github.com/ronisarkarexe/story-spark-ai"  },
   { icon: MessageSquare, text: "Open-source collaboration welcome"         },
 ];
 
