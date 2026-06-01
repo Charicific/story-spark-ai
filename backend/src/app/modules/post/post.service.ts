@@ -271,16 +271,36 @@ const doFeaturedPosts = async (postId: string) => {
   }
 };
 
-const getSinglePost = async (id: string) => {
-  const postById = await Post.findOne({ _id: id, isDeleted: { $ne: true } })
+const getSinglePost = async (id: string, token?: ITokenPayload | null) => {
+  const postById = await Post.findOneAndUpdate(
+    { _id: id, isDeleted: { $ne: true } },
+    { $inc: { viewsCount: 1 } },
+    { new: true }
+  )
     .populate("author", "name createdAt profile.bio")
     .populate({
       path: "reactions",
       populate: { path: "userId", select: "_id" },
     });
+
   if (!postById) {
     throw new ApiError(httpStatus.NOT_FOUND, "Post not found!");
   }
+
+  if (token) {
+    await User.findByIdAndUpdate(token._id, {
+      $pull: { readingHistory: id }
+    });
+    await User.findByIdAndUpdate(token._id, {
+      $push: {
+        readingHistory: {
+          $each: [id],
+          $slice: -500
+        }
+      }
+    });
+  }
+
   return postById;
 };
 
