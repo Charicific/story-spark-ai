@@ -1,25 +1,10 @@
-import React, { useEffect, useState, useRef, useMemo } from "react";
-import DOMPurify from "dompurify";
-import { getShortenedText, ITopicData, topicsData, getWordCount, SELECTED_TOPIC_CLASSES } from "./stories.utils";
-import { formatReadingStats } from "../../utils/story-utils";
+import React, { useEffect, useState, useRef } from "react";
 import toast, { Toaster } from "react-hot-toast";
-import { useCreatePostMutation, useDeletePostMutation } from "../../redux/apis/post.api";
-import { useGetProfileInfoQuery } from "../../redux/apis/user.api";
-import jsPDF from "jspdf";
-import StoryWorldMap from "../story-map/StoryWorldMap";
-import StoryRemix from "../remix/StoryRemix";
-import BookmarkButton from "../BookmarkButton";
-import logo from "../../assets/logoNew.png";
-import StoryGeneratingAnimation from "../loading/story-generating-animation.component";
-import AudioPlayer, { type AudioPlayerHandle, type NarrationPlaybackState } from "../AudioPlayer";
-import { useLocation, useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import {
   useGenerateAlternateEndingsMutation,
   useGenerateFreeAlternateEndingsMutation,
 } from "../../redux/apis/ai.model.api";
-import ImageFallback from "../ImageFallback";
-import GeneratedStoryTimeline from "./GeneratedStoryTimeline";
 
 // --- Custom Error Classes & Helper Types ---
 export class ApiError extends Error {
@@ -134,10 +119,6 @@ export interface IStories {
   language?: string;
 }
 
-interface IPost extends IStories {
-  topic: ITopicData[];
-  isPublished?: boolean;
-}
 
 interface StoriesComponentProps {
   stories: IStories[];
@@ -151,36 +132,7 @@ interface IRelatedStoriesComponentProps {
   currentPostId: string;
 }
 
-type StorySentenceSegment = {
-  id: string;
-  text: string;
-  startWordIndex: number;
-  endWordIndex: number;
-};
 
-const buildSentenceSegments = (content: string): StorySentenceSegment[] => {
-  if (!content.trim()) return [];
-  const sentenceMatches = content.match(/[^.!?]+[.!?]*\s*/g) ?? [content];
-  const segments: StorySentenceSegment[] = [];
-  let wordCursor = 0;
-
-  sentenceMatches.forEach((sentence, index) => {
-    const trimmedSentence = sentence.trim();
-    if (!trimmedSentence) return;
-    const wordsInSentence = sentence.match(/\S+/g)?.length ?? 0;
-    const startWordIndex = wordCursor;
-    const endWordIndex = wordsInSentence > 0 ? wordCursor + wordsInSentence - 1 : wordCursor;
-
-    segments.push({
-      id: `${index}-${startWordIndex}-${endWordIndex}`,
-      text: sentence,
-      startWordIndex,
-      endWordIndex,
-    });
-    wordCursor += wordsInSentence;
-  });
-  return segments;
-};
 
 export const RelatedStoriesComponent: React.FC<IRelatedStoriesComponentProps> = ({ posts, currentPostId }) => {
   const navigate = useNavigate();
@@ -210,37 +162,21 @@ const StoriesViewComponent: React.FC<StoriesComponentProps> = ({
   isLogin,
   setStories,
 }) => {
-  const location = useLocation();
-  const dispatch = useDispatch();
-  const audioPlayerRef = useRef<AudioPlayerHandle>(null);
 
   // Error handling states
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Standard functional states
   const [selectedStory, setSelectedStory] = useState<IStories | null>(null);
-  const [topics, setTopics] = useState<ITopicData[]>(topicsData);
-  const [selectTopics, setSelectTopics] = useState<ITopicData[]>([]);
-  const [newTopicTitle, setNewTopicTitle] = useState<string>("");
-  const [isCopied, setIsCopied] = useState<boolean>(false);
 
-  const [createPost] = useCreatePostMutation();
-  const [deletePost] = useDeletePostMutation();
-  const { data: profile } = useGetProfileInfoQuery(undefined, { skip: !isLogin });
   
   const lastSavedContentRef = useRef<string>("");
-  const isSavingRef = useRef<boolean>(false);
   const hasSavedSessionRef = useRef<boolean>(false);
   const savedPostIdRef = useRef<string | null>(null);
 
   const [isGeneratingEndings, setIsGeneratingEndings] = useState<boolean>(false);
-  const [endingsCache, setEndingsCache] = useState<{
-    [uuid: string]: { style: string; ending: string; fullStory: string }[];
-  }>({});
   const [originalStoryContent, setOriginalStoryContent] = useState<{ [uuid: string]: string }>({});
 
-  const [narrationWordIndex, setNarrationWordIndex] = useState<number>(0);
-  const [narrationState, setNarrationState] = useState<NarrationPlaybackState>("idle");
 
   const [generateAlternateEndings] = useGenerateAlternateEndingsMutation();
   const [generateFreeAlternateEndings] = useGenerateFreeAlternateEndingsMutation();
@@ -254,19 +190,11 @@ const StoriesViewComponent: React.FC<StoriesComponentProps> = ({
     }
   }, [selectedStory, originalStoryContent]);
 
-  useEffect(() => {
-    setSelectTopics(topics.filter((topic) => topic.selected));
-  }, [topics]);
 
   useEffect(() => {
-    setNarrationWordIndex(0);
-    setNarrationState("idle");
-    setErrorMessage(null); // Clear errors when switching stories
+    setErrorMessage(null);
   }, [selectedStory?.uuid]);
 
-  const sentenceSegments = useMemo(() => {
-    return buildSentenceSegments(selectedStory?.content ?? "");
-  }, [selectedStory?.content]);
 
   useEffect(() => {
     if (stories && stories.length > 0) {
@@ -316,25 +244,17 @@ const StoriesViewComponent: React.FC<StoriesComponentProps> = ({
       
       setErrorMessage(parsedMessage);
       toast.error("Failed to generate alternate endings.");
-    } {
+    } finally {
       toast.dismiss(toastId);
       setIsGeneratingEndings(false); // Fixes infinite spinner
     }
   };
 
-  const handleApplyEnding = (endingData: { style: string; ending: string; fullStory: string }) => {
-    if (!selectedStory) return;
-    const updatedStory = { ...selectedStory, content: endingData.fullStory };
     setSelectedStory(updatedStory);
     setStories(stories.map((s) => (s.uuid === selectedStory.uuid ? updatedStory : s)));
     toast.success(`${endingData.style} applied to story!`);
   };
 
-  const handleResetEnding = () => {
-    if (!selectedStory) return;
-    const originalContent = originalStoryContent[selectedStory.uuid];
-    if (!originalContent) return;
-    const updatedStory = { ...selectedStory, content: originalContent };
     setSelectedStory(updatedStory);
     setStories(stories.map((s) => (s.uuid === selectedStory.uuid ? updatedStory : s)));
     toast.success("Reverted to original story ending!");
