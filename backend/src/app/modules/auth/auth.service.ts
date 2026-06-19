@@ -15,8 +15,7 @@ import { OTPModel } from "../verify_email/otp.model";
 import { RefreshSession } from "./refresh_session.model";
 import { VerifyEmailService } from "../verify_email/verify_email.service";
 import { GamificationService } from "../gamification/gamification.service";
-import { USER_STATUS } from "../../../enums/user_status";
-import { SUBSCRIPTION_TYPE } from "../../../enums/subscription_type";
+
 
 const googleClient = new OAuth2Client(config.google_client_id);
 
@@ -65,6 +64,9 @@ const issueRefreshToken = async (user: any): Promise<string> => {
 
 const login = async (payload: AuthModel & { rememberMe?: boolean }) => {
   const { email: userEmail, password, rememberMe } = payload;
+  if (typeof userEmail !== "string" || typeof password !== "string") {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Invalid input formats");
+  }
   const isExistUser = await User.findOne({ email: userEmail });
   if (!isExistUser) {
     throw new ApiError(httpStatus.NOT_FOUND, "User not found!");
@@ -95,6 +97,9 @@ const login = async (payload: AuthModel & { rememberMe?: boolean }) => {
 
 const register = async (payload: IUser & { verificationToken?: string; confirmPassword?: string }) => {
   const { email: userEmail, verificationToken } = payload;
+  if (typeof userEmail !== "string" || typeof verificationToken !== "string") {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Invalid input formats");
+  }
   
   if (!verificationToken) {
     throw new ApiError(
@@ -163,6 +168,9 @@ const refreshToken = async (token: string) => {
 
   const { email: userEmail } = verifiedToken;
   const jti = (verifiedToken as any).jti as string | undefined;
+  if (typeof userEmail !== "string" || typeof jti !== "string") {
+    throw new ApiError(httpStatus.UNAUTHORIZED, "Invalid token payload");
+  }
   const user = await User.findOne({ email: userEmail });
   if (!user) {
     throw new ApiError(httpStatus.NOT_FOUND, "User not found!");
@@ -348,8 +356,8 @@ const changePassword = async (userPayload: any, payload: any) => {
   await user.save();
 };
 const forgotPassword = async (email: string) => {
-  if (!email) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "Email is required!");
+  if (!email || typeof email !== "string") {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Email is required and must be a string!");
   }
 
   // Same response for real and unknown emails to prevent account enumeration.
@@ -377,8 +385,13 @@ const resetPassword = async (payload: {
   verificationToken: string;
 }) => {
   const { email, password, confirmPassword, verificationToken } = payload;
-  if (!email || !password || !confirmPassword || !verificationToken) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "All fields are required!");
+  if (
+    typeof email !== "string" ||
+    typeof password !== "string" ||
+    typeof confirmPassword !== "string" ||
+    typeof verificationToken !== "string"
+  ) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Invalid input formats");
   }
   if (password !== confirmPassword) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Passwords do not match!");
