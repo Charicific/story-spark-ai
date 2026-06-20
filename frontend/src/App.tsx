@@ -44,6 +44,7 @@ import ReportBug from "./components/report-bug/ReportBug";
 import AnalyticsPage from "./components/dashboard/analytics/analytics.page";
 import StoryWorkspace from "./components/story/StoryWorkspace";
 import StoriesComponent from "./components/stories/stories.component";
+import ChatPage from "./components/chat/ChatPage";
 
 type ProtectedRouteProps = {
   allowedRoles: string[];
@@ -93,6 +94,7 @@ const router = createBrowserRouter([
       { path: "guidelines", element: <GuidelinesComponent /> },
       { path: "contributors", element: <ContributorsComponent /> },
       { path: "report-bug", element: <ReportBug /> },
+      { path: "chat", element: <ChatPage /> },
       {
         element: <ProtectedRoute allowedRoles={ALL_ROLES} />,
         children: [
